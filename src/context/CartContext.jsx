@@ -19,14 +19,16 @@ export function CartProvider({ children }) {
 
   const addItem = (item) => {
     setItems((prev) => {
-      const key = `${item.id}-${item.color}-${item.finish}`
-      const existing = prev.find((p) => `${p.id}-${p.color}-${p.finish}` === key)
+      const key = item.lineId || `${item.kind || 'item'}-${item.id}-${item.color || ''}-${item.finish || ''}`
+      const existing = prev.find((p) => p.lineId === key)
+      if (item.kind === 'subscription') {
+        if (existing) return prev
+        return [...prev, { ...item, qty: 1, lineId: key }]
+      }
       if (existing) {
-        return prev.map((p) =>
-          `${p.id}-${p.color}-${p.finish}` === key
-            ? { ...p, qty: p.qty + item.qty }
-            : p,
-        )
+        const nextQty = existing.qty + item.qty
+        const capped = item.maxQty != null ? Math.min(nextQty, item.maxQty) : nextQty
+        return prev.map((p) => (p.lineId === key ? { ...p, qty: capped } : p))
       }
       return [...prev, { ...item, lineId: key }]
     })
@@ -35,7 +37,13 @@ export function CartProvider({ children }) {
 
   const updateQty = (lineId, qty) => {
     setItems((prev) =>
-      qty < 1 ? prev.filter((p) => p.lineId !== lineId) : prev.map((p) => (p.lineId === lineId ? { ...p, qty } : p)),
+      prev.flatMap((p) => {
+        if (p.lineId !== lineId) return [p]
+        if (qty < 1) return []
+        if (p.kind === 'subscription') return [p]
+        const capped = p.maxQty != null ? Math.min(qty, p.maxQty) : qty
+        return [{ ...p, qty: capped }]
+      }),
     )
   }
 
@@ -44,9 +52,10 @@ export function CartProvider({ children }) {
 
   const count = items.reduce((n, i) => n + i.qty, 0)
   const total = items.reduce((n, i) => n + i.price * i.qty, 0)
+  const hasSubscriptionItem = items.some((i) => i.kind === 'subscription')
 
   const value = useMemo(
-    () => ({ items, open, setOpen, addItem, updateQty, removeItem, clear, count, total }),
+    () => ({ items, open, setOpen, addItem, updateQty, removeItem, clear, count, total, hasSubscriptionItem }),
     [items, open],
   )
 

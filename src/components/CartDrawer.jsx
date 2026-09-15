@@ -25,20 +25,22 @@ export default function CartDrawer() {
               <div>
                 <strong>{item.name}</strong>
                 <div className="sub" style={{ color: 'var(--muted)', fontSize: 13 }}>
-                  {item.colorName} · {item.finish}
+                  {item.kind === 'subscription' ? 'Monthly club' : `${item.colorName || ''} ${item.finish ? '· ' + item.finish : ''}`}
                 </div>
-                <div className="qty">
-                  <button type="button" onClick={() => updateQty(item.lineId, item.qty - 1)}>
-                    −
-                  </button>
-                  <span>{item.qty}</span>
-                  <button type="button" onClick={() => updateQty(item.lineId, item.qty + 1)}>
-                    +
-                  </button>
-                </div>
+                {item.kind !== 'subscription' && (
+                  <div className="qty">
+                    <button type="button" onClick={() => updateQty(item.lineId, item.qty - 1)}>
+                      −
+                    </button>
+                    <span>{item.qty}</span>
+                    <button type="button" onClick={() => updateQty(item.lineId, item.qty + 1)}>
+                      +
+                    </button>
+                  </div>
+                )}
               </div>
               <div>
-                <div>€{item.price * item.qty}</div>
+                <div>{item.kind === 'subscription' ? `€${item.price} / mo` : `€${item.price * item.qty}`}</div>
                 <button className="icon-btn" type="button" onClick={() => removeItem(item.lineId)}>
                   Remove
                 </button>
@@ -49,7 +51,7 @@ export default function CartDrawer() {
         <div className="drawer-foot" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 12 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span>Total</span>
-            <strong>€{total}</strong>
+            <strong>€{total}{items.some((i) => i.kind === 'subscription') ? ' + club' : ''}</strong>
           </div>
           <button
             className="btn btn-dark btn-full"
@@ -63,7 +65,7 @@ export default function CartDrawer() {
             Checkout
           </button>
           <Link to="/shop" className="btn btn-ghost btn-full" onClick={() => setOpen(false)}>
-            Continue shopping
+            Continue
           </Link>
         </div>
       </aside>
